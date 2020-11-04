@@ -26,3 +26,39 @@ BUILD_DOCKERFILE=$2
 BUILD_SOURCE_CONTEXTDIR=$3
 OS_IMAGE_URL=$4
 
+yum -y install buildah git make --setopt=install_weak_deps=False
+
+git clone https://github.com/kmods-via-containers/kmods-via-containers.git
+
+UNAME=$(uname -r)
+TAG=${BUILD_OUTPUT_IMAGE}
+
+# --------- Container instructions START ----------------------------------
+MOUNT_MACHINE_OS_CONTENT
+
+FROM registry.access.redhat.com/ubi8/ubi
+
+WORKINGDIR /tmp
+ 
+COPY /bin/${SCRIPT_NAME} .
+RUNV bash -c $(pwd)/${SCRIPT_NAME}
+ 
+# Install directly into the chroot, this way we do not have to install
+# additinoal packages like git into the container to install from a git repo
+# The deps are resolved by the outer image. 
+MOUNT
+cd kmods-via-containers
+make install DESTDIR=${MNT}/usr/local CONFDIR=${MNT}/etc/
+UMOUNT
+
+COMMIT ${TAG}
+PUSH   ${TAG} image-registry.openshift-image-registry.svc:5000/${TAG}
+
+UMOUNT_MACHINE_OS_CONTENT
+
+# --------- Container instructions END ------------------------------------
+
+# startupprobe readonlyfilesystem would prevent writing to /
+# touch /tmp/ready
+
+
