@@ -40,7 +40,7 @@ FROM registry.access.redhat.com/ubi8/ubi
 
 WORKINGDIR /tmp
  
-COPY /bin/${SCRIPT_NAME} .
+COPY ${SCRIPT_NAME} .
 RUNV bash -c $(pwd)/${SCRIPT_NAME}
  
 # Install directly into the chroot, this way we do not have to install
